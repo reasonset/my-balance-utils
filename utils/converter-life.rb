@@ -1,6 +1,7 @@
 #!/usr/bin/ruby
 require 'yaml'
 require 'csv'
+require_relative 'converter-utils'
 
 normal_line = []
 split_line = []
@@ -18,20 +19,20 @@ normal_line.pop
 
 detail = CSV.parse(normal_line.join)
 
-namemap = YAML.load(File.read("namemap.yaml"))
-namemap.default_proc = ->(h, k) { k }
-
-record = {}
+record = Record.new
 
 detail.each do |i|
-  splitter = if i[2] == "分割"
+  date = i[3][5, 5]
+  name = i[4]
+  cpart = if i[2] == "分割"
     i[9] =~ %r:(\d+)/(\d+):
     "(#$2/#$1)"
   else
-    ""
+    nil
   end
+  value = i[10].to_i
 
-  record[ sprintf('%s-%s%s', i[3][5, 5], namemap[i[4]], splitter ) ] = i[10].to_i
+  record.checkout date, name, cpart, value
 end
 
-YAML.dump({"out" => {"category" => record}}, STDOUT)
+YAML.dump({"out" => record.finish}, STDOUT)
